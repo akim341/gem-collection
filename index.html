@@ -3,136 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miner Tycoon Online</title>
+    <title>Miner Tycoon</title>
     <style>
         body { background: #0f0f13; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .card { background: #1a1a24; padding: 20px; border-radius: 20px; border: 1px solid #333; display: inline-block; width: 100%; max-width: 350px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; background: #000; color: white; outline: none; }
-        button { background: #ffd700; color: #000; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 90%; margin: 5px; transition: 0.2s; }
-        button:disabled { background: #333; color: #777; cursor: not-allowed; }
-        .stat-box { background: #111; padding: 15px; border-radius: 15px; border: 2px solid #ffd700; margin: 20px 0; font-size: 24px; }
-        .item { background: #222; padding: 15px; border-radius: 15px; margin: 10px 0; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
-        .item img { width: 50px; height: 50px; border-radius: 8px; background: #111; }
-        .item-info { text-align: left; flex-grow: 1; margin-left: 15px; }
-        .buy-btn { width: 80px; padding: 8px; font-size: 12px; }
+        .card { background: #1a1a24; padding: 20px; border-radius: 20px; border: 1px solid #333; display: inline-block; width: 100%; max-width: 350px; }
+        .stat-box { background: #111; padding: 15px; border-radius: 15px; border: 2px solid #ffd700; margin: 20px 0; font-size: 28px; color: #ffd700; }
+        .miner-area { margin: 20px 0; }
+        .stone-img { width: 120px; height: 120px; cursor: pointer; transition: 0.1s; }
+        .stone-img:active { transform: scale(0.9); }
+        .inventory { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .inv-item { background: #222; padding: 5px 10px; border-radius: 10px; font-size: 12px; border: 1px solid #444; }
+        .case-section { background: #251a33; padding: 15px; border-radius: 15px; border: 1px solid #8e44ad; }
+        button { background: #8e44ad; color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        button:disabled { background: #333; }
     </style>
 </head>
 <body>
 
-    <div id="auth">
-        <div class="card">
-            <h2 style="color:#ffd700">MINER LOGIN</h2>
-            <input type="text" id="u" placeholder="Логін">
-            <input type="password" id="p" placeholder="Пароль">
-            <button onclick="doRegister()">РЕЄСТРАЦІЯ</button>
-            <button onclick="doLogin()" style="background:#fff">УВІЙТИ</button>
-        </div>
-    </div>
-
-    <div id="game" style="display:none; max-width: 400px; margin: 0 auto;">
-        <div id="user-display" style="color:#888; font-size: 14px;"></div>
+    <div id="game" style="max-width: 400px; margin: 0 auto;">
         <div class="stat-box">💰 <span id="money">0</span></div>
-        
-        <div id="shop">
-            <div class="item">
-                <img src="img/stone1.png" onerror="this.src='https://via.placeholder.com/50?text=Opal'">
-                <div class="item-info"><b>Опал</b><br><small>100 | +5/с</small></div>
-                <button id="btn1" class="buy-btn" onclick="buyItem('Опал', 100, 5, 'btn1')">КУПИТИ</button>
-            </div>
-            <div class="item">
-                <img src="img/stone2.png" onerror="this.src='https://via.placeholder.com/50?text=Diam'">
-                <div class="item-info"><b>Діамант</b><br><small>1000 | +50/с</small></div>
-                <button id="btn2" class="buy-btn" onclick="buyItem('Діамант', 1000, 50, 'btn2')">КУПИТИ</button>
-            </div>
+        <div class="miner-area">
+            <p id="current-stone-name">Вугілля</p>
+            <img id="main-stone" src="img/coal.png" class="stone-img" onclick="doClick()" onerror="this.src='https://via.placeholder.com/120?text=STONE'">
         </div>
-        
-        <button onclick="doLogout()" style="background:none; color:#555; font-size:12px; text-decoration:underline;">Вийти</button>
+        <div class="inventory" id="inv"></div>
+        <div class="case-section">
+            <img src="img/case.png" style="width: 60px;" onerror="this.src='https://via.placeholder.com/60?text=CASE'">
+            <p>МАГІЧНИЙ КЕЙС</p>
+            <small>Ціна: 500 | Шанс: Опал / Діамант</small>
+            <button id="buy-case" onclick="openCase()">ВІДКРИТИ КЕЙС</button>
+        </div>
     </div>
 
     <script>
-        let curUser = null;
-        const key = 'my_mining_game';
+        let money = parseFloat(localStorage.getItem('m_money')) || 0;
+        let power = parseFloat(localStorage.getItem('m_power')) || 1;
+        let items = JSON.parse(localStorage.getItem('m_items')) || ["Вугілля"];
 
-        function getDB() { return JSON.parse(localStorage.getItem(key) || '{}'); }
-        function saveDB(db) { localStorage.setItem(key, JSON.stringify(db)); }
-
-        function doRegister() {
-            const u = document.getElementById('u').value.trim();
-            const p = document.getElementById('p').value.trim();
-            if(!u || !p) return alert("Введи дані");
-            let db = getDB();
-            if(db[u]) return alert("Логін зайнятий");
-            db[u] = { pass: p, money: 0, perSec: 1, items: [] };
-            saveDB(db);
-            alert("Готово! Тепер увійди.");
+        function save() {
+            localStorage.setItem('m_money', money);
+            localStorage.setItem('m_power', power);
+            localStorage.setItem('m_items', JSON.stringify(items));
         }
 
-        function doLogin() {
-            const u = document.getElementById('u').value.trim();
-            const p = document.getElementById('p').value.trim();
-            let db = getDB();
-            if(db[u] && db[u].pass === p) {
-                localStorage.setItem('active_session', u);
-                start(u);
-            } else { alert("Помилка входу"); }
-        }
-
-        function start(u) {
-            curUser = u;
-            document.getElementById('auth').style.display = 'none';
-            document.getElementById('game').style.display = 'block';
-            document.getElementById('user-display').innerText = "Гравець: " + u;
-            refresh();
-        }
-
-        function refresh() {
-            let db = getDB();
-            let data = db[curUser];
-            document.getElementById('money').innerText = Math.floor(data.money);
-            updateBtn('btn1', 100, 'Опал', data);
-            updateBtn('btn2', 1000, 'Діамант', data);
-        }
-
-        function updateBtn(id, price, name, data) {
-            const btn = document.getElementById(id);
-            if(data.items.includes(name)) {
-                btn.innerText = "Є"; btn.disabled = true;
-            } else {
-                btn.disabled = data.money < price;
+        function updateUI() {
+            document.getElementById('money').innerText = Math.floor(money);
+            document.getElementById('buy-case').disabled = money < 500;
+            const invDiv = document.getElementById('inv');
+            invDiv.innerHTML = "";
+            items.forEach(it => { invDiv.innerHTML += `<div class="inv-item">${it}</div>`; });
+            const mainImg = document.getElementById('main-stone');
+            if(items.includes("Діамант")) {
+                mainImg.src = "img/diam.png";
+                document.getElementById('current-stone-name').innerText = "Діамант";
+            } else if(items.includes("Опал")) {
+                mainImg.src = "img/opal.png";
+                document.getElementById('current-stone-name').innerText = "Опал";
             }
         }
 
-        function buyItem(name, price, power) {
-            let db = getDB();
-            let data = db[curUser];
-            if(data.money >= price && !data.items.includes(name)) {
-                data.money -= price;
-                data.items.push(name);
-                data.perSec += power;
-                saveDB(db);
-                refresh();
+        function doClick() {
+            money += power;
+            save();
+            updateUI();
+        }
+
+        function openCase() {
+            if(money >= 500) {
+                money -= 500;
+                let chance = Math.random();
+                let loot = chance > 0.8 ? "Діамант" : "Опал";
+                if(loot === "Діамант") power += 50; else power += 10;
+                if(!items.includes(loot)) items.push(loot);
+                alert("Тобі випав: " + loot + "!");
+                save();
+                updateUI();
             }
         }
 
         setInterval(() => {
-            if(!curUser) return;
-            let db = getDB();
-            let data = db[curUser];
-            data.money += data.perSec / 10;
-            saveDB(db);
-            document.getElementById('money').innerText = Math.floor(data.money);
-            if(Math.floor(data.money * 10) % 50 === 0) refresh();
-        }, 100);
+            money += (power / 5);
+            updateUI();
+            save();
+        }, 1000);
 
-        function doLogout() {
-            localStorage.removeItem('active_session');
-            location.reload();
-        }
-
-        window.onload = () => {
-            let s = localStorage.getItem('active_session');
-            if(s) start(s);
-        };
+        updateUI();
     </script>
 </body>
 </html>

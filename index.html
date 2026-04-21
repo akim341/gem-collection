@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miner Tycoon Classic</title>
+    <title>Miner Tycoon Original</title>
     <style>
         body { background: #0f0f13; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 15px; }
-        .card { background: #1a1a24; padding: 20px; border-radius: 20px; border: 1px solid #333; display: inline-block; width: 100%; max-width: 350px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .card { background: #1a1a24; padding: 20px; border-radius: 20px; border: 1px solid #333; display: inline-block; width: 100%; max-width: 350px; }
         input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; background: #000; color: white; outline: none; }
         .stat-box { background: #111; padding: 15px; border-radius: 15px; border: 2px solid #ffd700; margin: 15px auto; font-size: 28px; color: #ffd700; max-width: 300px; }
         .miner-area { margin: 20px 0; }
@@ -17,16 +17,18 @@
         .cases-container { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 400px; margin: 0 auto; }
         .case-card { background: #1a1a24; padding: 15px; border-radius: 15px; border: 1px solid #333; }
         button { color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
-        .btn-auth { background: #ffd700; color: #000; margin-bottom: 5px; }
-        .btn-case { background: #8e44ad; }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .btn-auth { background: #ffd700; color: #000; }
+        .btn-common { background: #555; }
+        .btn-rare { background: #2980b9; }
+        .btn-epic { background: #8e44ad; }
+        button:disabled { background: #333; color: #666; }
     </style>
 </head>
 <body>
 
     <div id="auth">
         <div class="card">
-            <h2 style="color:#ffd700">ВХІД В ШАХТУ</h2>
+            <h2 style="color:#ffd700">ВХІД</h2>
             <input type="text" id="u" placeholder="Логін">
             <input type="password" id="p" placeholder="Пароль">
             <button class="btn-auth" onclick="doRegister()">РЕЄСТРАЦІЯ</button>
@@ -36,28 +38,32 @@
 
     <div id="game" style="display:none;">
         <div class="stat-box">💰 <span id="money">0</span></div>
-        
         <div class="miner-area">
             <p id="stone-name">Опал</p>
             <img id="main-stone" src="img/opal.png" class="stone-img" onclick="doClick()" onerror="this.src='https://via.placeholder.com/130?text=OPAL'">
         </div>
-
         <div class="inventory" id="inv"></div>
 
         <div class="cases-container">
             <div class="case-card">
-                <small>КЕЙС З КАМІННЯМ</small>
-                <div>Ціна: 500</div>
-                <button id="buy-btn" class="btn-case" onclick="openCase()">ВІДКРИТИ</button>
+                <small>ЗВИЧАЙНИЙ КЕЙС (100)</small>
+                <button id="b1" class="btn-common" onclick="openCase(100, 'c')">ВІДКРИТИ</button>
+            </div>
+            <div class="case-card">
+                <small>РІДКІСНИЙ КЕЙС (500)</small>
+                <button id="b2" class="btn-rare" onclick="openCase(500, 'r')">ВІДКРИТИ</button>
+            </div>
+            <div class="case-card">
+                <small>ЕПІЧНИЙ КЕЙС (2000)</small>
+                <button id="b3" class="btn-epic" onclick="openCase(2000, 'e')">ВІДКРИТИ</button>
             </div>
         </div>
-        
-        <button onclick="doLogout()" style="background:none; color:#555; font-size:12px; text-decoration:underline; margin-top:20px;">Вийти з акаунта</button>
+        <button onclick="doLogout()" style="background:none; color:#555; font-size:10px; margin-top:20px;">Вийти</button>
     </div>
 
     <script>
         let curUser = null;
-        const dbKey = 'miner_db';
+        const dbKey = 'miner_db_v2';
 
         function getDB() { return JSON.parse(localStorage.getItem(dbKey) || '{}'); }
         function saveDB(db) { localStorage.setItem(dbKey, JSON.stringify(db)); }
@@ -65,12 +71,12 @@
         function doRegister() {
             const u = document.getElementById('u').value.trim();
             const p = document.getElementById('p').value.trim();
-            if(!u || !p) return alert("Заповни всі поля!");
+            if(!u || !p) return;
             let db = getDB();
-            if(db[u]) return alert("Такий логін вже є!");
-            db[u] = { pass: p, money: 0, power: 1, items: ["Опал"] };
+            if(db[u]) return alert("Зайнято");
+            db[u] = { pass: p, money: 0, power: 1, auto: 1, items: ["Опал"] };
             saveDB(db);
-            alert("Успішно! Тепер тисни 'Увійти'");
+            alert("Готово");
         }
 
         function doLogin() {
@@ -79,9 +85,9 @@
             let db = getDB();
             if(db[u] && db[u].pass === p) {
                 curUser = u;
-                localStorage.setItem('miner_session', u);
+                localStorage.setItem('m_s', u);
                 showGame();
-            } else { alert("Невірний логін або пароль"); }
+            }
         }
 
         function showGame() {
@@ -92,16 +98,14 @@
 
         function update() {
             if(!curUser) return;
-            let db = getDB();
-            let data = db[curUser];
-            
+            let data = getDB()[curUser];
             document.getElementById('money').innerText = Math.floor(data.money);
-            document.getElementById('buy-btn').disabled = data.money < 500;
-
+            document.getElementById('b1').disabled = data.money < 100;
+            document.getElementById('b2').disabled = data.money < 500;
+            document.getElementById('b3').disabled = data.money < 2000;
             const invDiv = document.getElementById('inv');
             invDiv.innerHTML = "";
             data.items.forEach(it => { invDiv.innerHTML += `<div class="inv-item">${it}</div>`; });
-
             const img = document.getElementById('main-stone');
             const nameTxt = document.getElementById('stone-name');
             if(data.items.includes("Рубін")) { img.src="img/ruby.png"; nameTxt.innerText="Рубін"; }
@@ -116,40 +120,34 @@
             update();
         }
 
-        function openCase() {
+        function openCase(cost, type) {
             let db = getDB();
             let data = db[curUser];
-            if(data.money >= 500) {
-                data.money -= 500;
+            if(data.money >= cost) {
+                data.money -= cost;
                 let r = Math.random();
-                let loot = r > 0.7 ? "Рубін" : "Діамант";
-                let gain = loot === "Рубін" ? 50 : 15;
-                
+                let loot = ""; let pGain = 0; let aGain = 0;
+                if(type === 'c') { loot = r > 0.5 ? "Аметист" : "Топаз"; pGain = 5; aGain = 2; }
+                else if(type === 'r') { loot = r > 0.6 ? "Діамант" : "Смарагд"; pGain = 20; aGain = 10; }
+                else { loot = r > 0.7 ? "Рубін" : "Сапфір"; pGain = 100; aGain = 50; }
                 if(!data.items.includes(loot)) data.items.push(loot);
-                data.power += gain;
-                alert("Випало: " + loot + "!");
+                data.power += pGain; data.auto += aGain;
                 saveDB(db);
                 update();
+                alert("Випало: " + loot);
             }
-        }
-
-        function doLogout() {
-            localStorage.removeItem('miner_session');
-            location.reload();
         }
 
         setInterval(() => {
             if(!curUser) return;
             let db = getDB();
-            db[curUser].money += (db[curUser].power / 10);
+            db[curUser].money += (db[curUser].auto / 1); 
             saveDB(db);
             update();
-        }, 1000);
+        }, 3000);
 
-        window.onload = () => {
-            let session = localStorage.getItem('miner_session');
-            if(session) { curUser = session; showGame(); }
-        }
+        function doLogout() { localStorage.removeItem('m_s'); location.reload(); }
+        window.onload = () => { let s = localStorage.getItem('m_s'); if(s) { curUser = s; showGame(); } }
     </script>
 </body>
 </html>

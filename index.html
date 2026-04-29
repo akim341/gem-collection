@@ -3,67 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miner Tycoon Original</title>
+    <title>Miner Tycoon Collection</title>
     <style>
         body { background: #0f0f13; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 15px; }
         .card { background: #1a1a24; padding: 20px; border-radius: 20px; border: 1px solid #333; display: inline-block; width: 100%; max-width: 350px; }
         input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; background: #000; color: white; outline: none; }
         .stat-box { background: #111; padding: 15px; border-radius: 15px; border: 2px solid #ffd700; margin: 15px auto; font-size: 28px; color: #ffd700; max-width: 300px; }
-        .miner-area { margin: 20px 0; }
-        .stone-img { width: 130px; height: 130px; cursor: pointer; transition: 0.1s; }
+        .miner-area { margin: 20px 0; min-height: 180px; }
+        .stone-img { width: 150px; height: 150px; cursor: pointer; transition: 0.1s; object-fit: contain; }
         .stone-img:active { transform: scale(0.95); }
         .inventory { display: flex; justify-content: center; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
         .inv-item { background: #222; padding: 4px 10px; border-radius: 8px; font-size: 11px; border: 1px solid #444; }
         .cases-container { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 400px; margin: 0 auto; }
         .case-card { background: #1a1a24; padding: 15px; border-radius: 15px; border: 1px solid #333; }
-        button { color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
+        button { color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; transition: 0.3s; }
         .btn-auth { background: #ffd700; color: #000; }
         .btn-common { background: #555; }
         .btn-rare { background: #2980b9; }
         .btn-epic { background: #8e44ad; }
-        button:disabled { background: #333; color: #666; }
+        button:disabled { background: #333; color: #666; opacity: 0.5; }
     </style>
 </head>
 <body>
 
     <div id="auth">
         <div class="card">
-            <h2 style="color:#ffd700">ВХІД</h2>
-            <input type="text" id="u" placeholder="Логін">
-            <input type="password" id="p" placeholder="Пароль">
-            <button class="btn-auth" onclick="doRegister()">РЕЄСТРАЦІЯ</button>
-            <button class="btn-auth" style="background:#fff" onclick="doLogin()">УВІЙТИ</button>
+            <h2 style="color:#ffd700">ШАХТАРСЬКА ІМПЕРІЯ</h2>
+            <input type="text" id="u" placeholder="Твій логін">
+            <input type="password" id="p" placeholder="Твій пароль">
+            <button class="btn-auth" onclick="doRegister()">СТВОРИТИ ПЕРСОНАЖА</button>
+            <button class="btn-auth" style="background:#fff; margin-top:10px;" onclick="doLogin()">УВІЙТИ В ГРУ</button>
         </div>
     </div>
 
     <div id="game" style="display:none;">
         <div class="stat-box">💰 <span id="money">0</span></div>
         <div class="miner-area">
-            <p id="stone-name">Опал</p>
-            <img id="main-stone" src="img/opal.png" class="stone-img" onclick="doClick()" onerror="this.src='https://via.placeholder.com/130?text=OPAL'">
+            <h3 id="stone-name" style="color:#ffd700; margin-bottom:10px;">Опал</h3>
+            <img id="main-stone" src="зображення/опал.png" class="stone-img" onclick="doClick()" onerror="this.src='https://via.placeholder.com/150?text=Error'">
         </div>
+        
+        <p style="font-size: 12px; color: #888;">Твоя колекція:</p>
         <div class="inventory" id="inv"></div>
 
         <div class="cases-container">
             <div class="case-card">
-                <small>ЗВИЧАЙНИЙ КЕЙС (100)</small>
+                <small>ЗВИЧАЙНИЙ КЕЙС (100 💰)</small>
                 <button id="b1" class="btn-common" onclick="openCase(100, 'c')">ВІДКРИТИ</button>
             </div>
             <div class="case-card">
-                <small>РІДКІСНИЙ КЕЙС (500)</small>
+                <small>РІДКІСНИЙ КЕЙС (500 💰)</small>
                 <button id="b2" class="btn-rare" onclick="openCase(500, 'r')">ВІДКРИТИ</button>
             </div>
             <div class="case-card">
-                <small>ЕПІЧНИЙ КЕЙС (2000)</small>
+                <small>ЕПІЧНИЙ КЕЙС (2000 💰)</small>
                 <button id="b3" class="btn-epic" onclick="openCase(2000, 'e')">ВІДКРИТИ</button>
             </div>
         </div>
-        <button onclick="doLogout()" style="background:none; color:#555; font-size:10px; margin-top:20px;">Вийти</button>
+        <button onclick="doLogout()" style="background:none; color:#555; font-size:10px; margin-top:20px;">Вийти з облікового запису</button>
     </div>
 
     <script>
         let curUser = null;
-        const dbKey = 'miner_db_v2';
+        const dbKey = 'miner_db_final';
+
+        const stoneFiles = {
+            "Опал": "зображення/опал.png",
+            "Смарагд": "зображення/смарагд.JPG",
+            "Аметист": "зображення/аметус.JPG",
+            "Топаз": "зображення/топаз.JPG",
+            "Аквамарин": "зображення/аквамарун.png",
+            "Рубін": "зображення/рубін.png",
+            "Сапфір": "зображення/сапфір.png",
+            "Діамант": "зображення/діамант.png",
+            "Малахіт": "зображення/малахіт.png",
+            "Онікс": "зображення/онікс.png",
+            "Турмалін": "зображення/турмалін.png",
+            "Гранат": "зображення/гранат.png"
+        };
 
         function getDB() { return JSON.parse(localStorage.getItem(dbKey) || '{}'); }
         function saveDB(db) { localStorage.setItem(dbKey, JSON.stringify(db)); }
@@ -73,10 +90,10 @@
             const p = document.getElementById('p').value.trim();
             if(!u || !p) return;
             let db = getDB();
-            if(db[u]) return alert("Зайнято");
-            db[u] = { pass: p, money: 0, power: 1, auto: 1, items: ["Опал"] };
+            if(db[u]) return alert("Такий шахтар уже є!");
+            db[u] = { pass: p, money: 0, power: 1, auto: 0, items: ["Опал"] };
             saveDB(db);
-            alert("Готово");
+            alert("Успішно!");
         }
 
         function doLogin() {
@@ -87,7 +104,7 @@
                 curUser = u;
                 localStorage.setItem('m_s', u);
                 showGame();
-            }
+            } else { alert("Помилка входу"); }
         }
 
         function showGame() {
@@ -103,14 +120,22 @@
             document.getElementById('b1').disabled = data.money < 100;
             document.getElementById('b2').disabled = data.money < 500;
             document.getElementById('b3').disabled = data.money < 2000;
+
             const invDiv = document.getElementById('inv');
             invDiv.innerHTML = "";
             data.items.forEach(it => { invDiv.innerHTML += `<div class="inv-item">${it}</div>`; });
+
             const img = document.getElementById('main-stone');
             const nameTxt = document.getElementById('stone-name');
-            if(data.items.includes("Рубін")) { img.src="img/ruby.png"; nameTxt.innerText="Рубін"; }
-            else if(data.items.includes("Діамант")) { img.src="img/diam.png"; nameTxt.innerText="Діамант"; }
-            else { img.src="img/opal.png"; nameTxt.innerText="Опал"; }
+            
+            let bestStone = "Опал";
+            if(data.items.includes("Діамант")) bestStone = "Діамант";
+            else if(data.items.includes("Рубін")) bestStone = "Рубін";
+            else if(data.items.includes("Сапфір")) bestStone = "Сапфір";
+            else if(data.items.includes("Смарагд")) bestStone = "Смарагд";
+            
+            nameTxt.innerText = bestStone;
+            img.src = stoneFiles[bestStone] || "зображення/опал.png";
         }
 
         function doClick() {
@@ -126,25 +151,19 @@
             if(data.money >= cost) {
                 data.money -= cost;
                 let r = Math.random();
-                let loot = ""; let pGain = 0; let aGain = 0;
-                if(type === 'c') { loot = r > 0.5 ? "Аметист" : "Топаз"; pGain = 5; aGain = 2; }
-                else if(type === 'r') { loot = r > 0.6 ? "Діамант" : "Смарагд"; pGain = 20; aGain = 10; }
-                else { loot = r > 0.7 ? "Рубін" : "Сапфір"; pGain = 100; aGain = 50; }
+                let loot = ""; let pGain = 0;
+                
+                if(type === 'c') { loot = r > 0.5 ? "Аметист" : "Топаз"; pGain = 5; }
+                else if(type === 'r') { loot = r > 0.7 ? "Діамант" : "Смарагд"; pGain = 25; }
+                else { loot = r > 0.6 ? "Рубін" : "Сапфір"; pGain = 100; }
+                
                 if(!data.items.includes(loot)) data.items.push(loot);
-                data.power += pGain; data.auto += aGain;
+                data.power += pGain;
                 saveDB(db);
                 update();
                 alert("Випало: " + loot);
             }
         }
-
-        setInterval(() => {
-            if(!curUser) return;
-            let db = getDB();
-            db[curUser].money += (db[curUser].auto / 1); 
-            saveDB(db);
-            update();
-        }, 3000);
 
         function doLogout() { localStorage.removeItem('m_s'); location.reload(); }
         window.onload = () => { let s = localStorage.getItem('m_s'); if(s) { curUser = s; showGame(); } }
